@@ -15,7 +15,7 @@ env = gym.make("Inverted_Pendulum_version_1")
 model_PPO = PPO("MlpPolicy", env, verbose=1)
 
 print(" Training ...")
-model_PPO.learn(total_timesteps=200000)
+model_PPO.learn(total_timesteps=500000)
 
-model_PPO.save("pendulum_ppo_honours")
+model_PPO.save("ppo_models/pendulum_ppo_honours_500k_steps")
 print("Training complete")
