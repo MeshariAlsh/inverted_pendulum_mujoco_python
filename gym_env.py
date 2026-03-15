@@ -47,6 +47,8 @@ class Inverted_Pendulum_env(gym.Env):
         # Observations 
         self.observation_space = gym.spaces.Box(-math.inf, math.inf, (4,), dtype=np.float32)
 
+        self.intial_pole_angle =  np.random.uniform(-0.01, 0.01)  # For reward shaping
+
         # Reward 
         self.reward = 0 # Intial zero 
 
@@ -90,10 +92,12 @@ class Inverted_Pendulum_env(gym.Env):
 
         observation = self.get_obs()
 
-        pole_angle = observation[1] # data.qpos 
-        terminated = bool(abs(pole_angle) > 0.3)
 
-        reward = 1 if not terminated else 0
+        current_pole_angle = observation[1] # data.qpos 
+        distance_pole = abs(current_pole_angle - self.intial_pole_angle)
+        terminated = bool(abs(distance_pole) > 0.2)
+
+        reward = (1 - distance_pole) if not terminated else 0
 
         # no use for them but it needs to be returned becuase  it's required by gym api
         truncated = False
