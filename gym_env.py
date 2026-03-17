@@ -95,9 +95,9 @@ class Inverted_Pendulum_env(gym.Env):
 
         current_pole_angle = observation[1] # data.qpos 
         distance_pole = abs(current_pole_angle - self.intial_pole_angle)
-        terminated = bool(abs(distance_pole) > 0.2)
+        terminated = bool(abs(current_pole_angle) > 0.2)
 
-        reward = (1 - distance_pole) if not terminated else 0
+        reward = (1 - distance_pole) if not terminated else -1 * (distance_pole + 0.001)
 
         # no use for them but it needs to be returned becuase  it's required by gym api
         truncated = False
