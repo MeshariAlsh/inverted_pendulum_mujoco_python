@@ -16,7 +16,7 @@ XML = """
 
     <worldbody>
         <light diffuse=" .5 .5 .5" pos=" 0 0 3" dir="0 0 -1" />
-        <geom type="plane" material="checkard" size=" 3 3 3" />
+        <geom type="plane" material="checkard" size=" 7 7 7" />
 
         <body pos="0 0 .20">
             <joint name="slide" type="slide" axis=" 1 0 0"/>
@@ -94,10 +94,11 @@ class Inverted_Pendulum_env(gym.Env):
 
 
         current_pole_angle = observation[1] # data.qpos 
+        current_pole_vel = abs(self.data.qvel[1])  # data.vel 
         distance_pole = abs(current_pole_angle - self.intial_pole_angle)
-        terminated = bool(abs(current_pole_angle) > 0.2)
+        terminated = bool(abs(current_pole_angle) > 0.3)
 
-        reward = (1 - distance_pole) if not terminated else -1 * (distance_pole + 0.001)
+        reward = (1 - (10 * distance_pole**3) - (1 * current_pole_vel**2)) if not terminated else -1.0
 
         # no use for them but it needs to be returned becuase  it's required by gym api
         truncated = False
