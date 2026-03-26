@@ -9,7 +9,7 @@ m = mujoco.MjModel.from_xml_string(XML)
 d = mujoco.MjData(m)
 
 env = Inverted_Pendulum_env(XML) 
-model = PPO.load("ppo_models/pendulum_ppo_honours_500k_steps_Distance_based_reward_Negative_penalty_wider_radian", env)
+model = PPO.load("ppo_models/pendulum_ppo_honours_500k_steps_Distance_based_velocity_stability", env)
 
 obs, info = env.reset()
 

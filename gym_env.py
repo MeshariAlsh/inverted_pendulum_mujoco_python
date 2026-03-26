@@ -49,6 +49,11 @@ class Inverted_Pendulum_env(gym.Env):
 
         self.intial_pole_angle =  np.random.uniform(-0.01, 0.01)  # For reward shaping
 
+        self.previous_velocity = 0 # Intially zero 
+
+        self.current_step = 0
+        self.total_expected_steps = 500_000 # Matches the PPO training length
+
         # Reward 
         self.reward = 0 # Intial zero 
 
@@ -74,6 +79,65 @@ class Inverted_Pendulum_env(gym.Env):
     
         return observation, info
     
+    def reward_shaping(self, raw_reward: float, progress: float) -> float:
+        """Reward shaping (encourage early exploration)
+
+        Args:
+            raw_reward: Original reward
+            progress: Learning progress (0-1)
+
+        Returns:
+            shaped_reward: Shaped reward
+        """
+        # Reduce penalties early in training
+        penalty_scale = 0.3 + 0.7 * progress
+        if raw_reward < 0:
+            return raw_reward * penalty_scale
+        else:
+            return raw_reward
+
+    
+    def get_training_progress(self):
+        self.current_step += 1
+        return min(self.current_step / self.total_expected_steps, 1.0)
+    
+    def compute_reward(self, action, previous_velocity):
+
+        observation = self.get_obs()
+        current_pole_angle = observation[1] # data.qpos 
+        current_pole_vel = self.data.qvel[1] # data.vel 
+
+        # 1 pole angle tracking 
+        distance_pole = abs(current_pole_angle - 0.0)
+        r_tracking = -distance_pole / 10.0
+       
+        # 2 Velocity stability 
+        delta_vel =  abs(previous_velocity - current_pole_vel)
+        r_stability =  -delta_vel * 0.1
+
+        # Reward is a weighted sum
+        reward = (r_tracking * 1.0) + (r_stability * 0.5)
+
+        return reward 
+    
+    def reward_shaping(self, raw_reward: float, progress: float) -> float:
+        """Reward shaping (encourage early exploration)
+
+        Args:
+            raw_reward: Original reward
+            progress: Learning progress (0-1)
+
+        Returns:
+            shaped_reward: Shaped reward
+        """
+        # Reduce penalties early in training
+        penalty_scale = 0.3 + 0.7 * progress
+        if raw_reward < 0:
+            return raw_reward * penalty_scale
+        else:
+            return raw_reward
+
+
     def step(self, action):
 
         """Execute one timestep within the environment.
@@ -87,22 +151,26 @@ class Inverted_Pendulum_env(gym.Env):
         # Action will come from PPO 
         self.data.ctrl[0] = action[0]
 
+        previous_velocity = abs(self.data.qvel[1]) 
         # Run a single step in the Mujoco simulation
         mujoco.mj_step(self.model, self.data)
 
+
         observation = self.get_obs()
 
-
         current_pole_angle = observation[1] # data.qpos 
-        current_pole_vel = abs(self.data.qvel[1])  # data.vel 
-        distance_pole = abs(current_pole_angle - self.intial_pole_angle)
+        
         terminated = bool(abs(current_pole_angle) > 0.3)
 
-        reward = (1 - (10 * distance_pole**3) - (1 * current_pole_vel**2)) if not terminated else -1.0
+        raw_reward = self.compute_reward(action[0], previous_velocity)
+
+        progress = self.get_training_progress()
+
+        final_reward = self.reward_shaping(raw_reward, progress)
 
         # no use for them but it needs to be returned becuase  it's required by gym api
         truncated = False
         info = {}
 
-        return  observation, reward, terminated, truncated, info
+        return  observation, final_reward, terminated, truncated, info
         
