@@ -101,22 +101,29 @@ class Inverted_Pendulum_env(gym.Env):
         self.current_step += 1
         return min(self.current_step / self.total_expected_steps, 1.0)
     
-    def compute_reward(self, action, previous_velocity):
+    def compute_reward(self, action, previous_velocity, previous_cart_position):
 
         observation = self.get_obs()
         current_pole_angle = observation[1] # data.qpos 
         current_pole_vel = self.data.qvel[1] # data.vel 
+        current_cart_position = observation[0] # Cart posistion
 
-        # 1 pole angle tracking 
+        r_alive = 1.0 # reward for staying alive 
+
+        # 1 Pole angle tracking 
         distance_pole = abs(current_pole_angle - 0.0)
-        r_tracking = -distance_pole / 10.0
+        r_tracking = -distance_pole * 5
        
         # 2 Velocity stability 
         delta_vel =  abs(previous_velocity - current_pole_vel)
         r_stability =  -delta_vel * 0.1
 
+        # 3 Position center
+        distance_cart = current_cart_position**2
+        r_center= -distance_cart * 4
+
         # Reward is a weighted sum
-        reward = (r_tracking * 1.0) + (r_stability * 0.5)
+        reward = (r_tracking ) + (r_stability) + (r_center) + r_alive
 
         return reward 
     
@@ -151,7 +158,8 @@ class Inverted_Pendulum_env(gym.Env):
         # Action will come from PPO 
         self.data.ctrl[0] = action[0]
 
-        previous_velocity = abs(self.data.qvel[1]) 
+        previous_velocity = self.data.qvel[1]
+        previous_cart_position = self.data.qpos[0]
         # Run a single step in the Mujoco simulation
         mujoco.mj_step(self.model, self.data)
 
@@ -159,14 +167,18 @@ class Inverted_Pendulum_env(gym.Env):
         observation = self.get_obs()
 
         current_pole_angle = observation[1] # data.qpos 
+        current_cart_position = observation[0]
         
-        terminated = bool(abs(current_pole_angle) > 0.3)
+        terminated = bool(abs(current_pole_angle) > 0.3 or abs(current_cart_position) > 3) 
 
-        raw_reward = self.compute_reward(action[0], previous_velocity)
+        if terminated:
+            final_reward = -10.0 
 
-        progress = self.get_training_progress()
+        else:
+            raw_reward = self.compute_reward(action[0], previous_velocity, previous_cart_position)
+            progress = self.get_training_progress()
+            final_reward = self.reward_shaping(raw_reward, progress)
 
-        final_reward = self.reward_shaping(raw_reward, progress)
 
         # no use for them but it needs to be returned becuase  it's required by gym api
         truncated = False
