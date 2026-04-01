@@ -16,7 +16,7 @@ obs, info = env.reset()
 with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
     start = time.time()
 
-    while viewer.is_running() and time.time() - start < 60:
+    while viewer.is_running() and time.time() - start < 1000:
         step_time = time.time()
 
         action, state = model.predict(obs, deterministic=True)

@@ -49,6 +49,8 @@ class Inverted_Pendulum_env(gym.Env):
 
         self.intial_pole_angle =  np.random.uniform(-0.01, 0.01)  # For reward shaping
 
+        self.target_pole_angle = 0.0 
+
         self.previous_velocity = 0 # Intially zero 
 
         self.current_step = 0
@@ -72,6 +74,8 @@ class Inverted_Pendulum_env(gym.Env):
 
         mujoco.mj_resetData(self.model, self.data)
         self.data.qpos[1] = np.random.uniform(-0.01, 0.01)
+        self.current_pole_angle = self.data.qpos[1]
+        self.prev_error = abs(self.current_pole_angle - self.target_pole_angle)
 
         
         observation = self.get_obs()
@@ -108,22 +112,21 @@ class Inverted_Pendulum_env(gym.Env):
         current_pole_vel = self.data.qvel[1] # data.vel 
         current_cart_position = observation[0] # Cart posistion
 
-        r_alive = 1.0 # reward for staying alive 
+        r_alive = 0.1 # reward for staying alive 
 
         # 1 Pole angle tracking 
-        distance_pole = abs(current_pole_angle - 0.0)
-        r_tracking = -distance_pole * 5
-       
-        # 2 Velocity stability 
-        delta_vel =  abs(previous_velocity - current_pole_vel)
-        r_stability =  -delta_vel * 0.1
+        distance_pole = (self.current_pole_angle -  self.target_pole_angle)**2
 
+        error_reduction = self.prev_error - distance_pole
+
+        r_tracking = -distance_pole * 10
+       
         # 3 Position center
-        distance_cart = current_cart_position**2
-        r_center= -distance_cart * 4
+        distance_cart = current_cart_position
+        r_center= -distance_cart * 1
 
         # Reward is a weighted sum
-        reward = (r_tracking ) + (r_stability) + (r_center) + r_alive
+        reward = (r_tracking) + (r_center) + r_alive
 
         return reward 
     
@@ -157,19 +160,19 @@ class Inverted_Pendulum_env(gym.Env):
         """
         # Action will come from PPO 
         self.data.ctrl[0] = action[0]
+       
 
         previous_velocity = self.data.qvel[1]
         previous_cart_position = self.data.qpos[0]
         # Run a single step in the Mujoco simulation
         mujoco.mj_step(self.model, self.data)
 
-
         observation = self.get_obs()
 
-        current_pole_angle = observation[1] # data.qpos 
+        self.current_pole_angle = observation[1] # data.qpos 
         current_cart_position = observation[0]
         
-        terminated = bool(abs(current_pole_angle) > 0.3 or abs(current_cart_position) > 3) 
+        terminated = bool(abs(self.current_pole_angle) > 0.3 or abs(current_cart_position) > 3) 
 
         if terminated:
             final_reward = -10.0 
