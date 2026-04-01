@@ -75,7 +75,6 @@ class Inverted_Pendulum_env(gym.Env):
         mujoco.mj_resetData(self.model, self.data)
         self.data.qpos[1] = np.random.uniform(-0.01, 0.01)
         self.current_pole_angle = self.data.qpos[1]
-        self.prev_error = abs(self.current_pole_angle - self.target_pole_angle)
 
         
         observation = self.get_obs()
@@ -132,24 +131,6 @@ class Inverted_Pendulum_env(gym.Env):
 
         return reward 
     
-    def reward_shaping(self, raw_reward: float, progress: float) -> float:
-        """Reward shaping (encourage early exploration)
-
-        Args:
-            raw_reward: Original reward
-            progress: Learning progress (0-1)
-
-        Returns:
-            shaped_reward: Shaped reward
-        """
-        # Reduce penalties early in training
-        penalty_scale = 0.3 + 0.7 * progress
-        if raw_reward < 0:
-            return raw_reward * penalty_scale
-        else:
-            return raw_reward
-
-
     def step(self, action):
 
         """Execute one timestep within the environment.
