@@ -17,5 +17,5 @@ model_PPO = PPO("MlpPolicy", env, verbose=1)
 print(" Training ...")
 model_PPO.learn(total_timesteps=500000)
 
-model_PPO.save("ppo_models/pendulum_ppo_honours_500k_steps_Distance_based_velocity_stability_position_center")
+model_PPO.save("ppo_models/pendulum_ppo_honours_500k_steps_Squared_Distance_based_Squared_velocity_stability_position_center")
 print("Training complete")

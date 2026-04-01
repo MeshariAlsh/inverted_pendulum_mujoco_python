@@ -117,16 +117,18 @@ class Inverted_Pendulum_env(gym.Env):
         # 1 Pole angle tracking 
         distance_pole = (self.current_pole_angle -  self.target_pole_angle)**2
 
-        error_reduction = self.prev_error - distance_pole
-
         r_tracking = -distance_pole * 10
+
+        # 2 Velocity Stability
+        delta_vel = (current_pole_vel - previous_velocity)**2
+        r_stability = -delta_vel * 1
        
         # 3 Position center
         distance_cart = current_cart_position
         r_center= -distance_cart * 1
 
         # Reward is a weighted sum
-        reward = (r_tracking) + (r_center) + r_alive
+        reward = (r_tracking) + (r_center) + (r_stability) + r_alive
 
         return reward 
     
