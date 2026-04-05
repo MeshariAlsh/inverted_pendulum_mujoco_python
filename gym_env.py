@@ -109,11 +109,11 @@ class Inverted_Pendulum_env(gym.Env):
         observation = self.get_obs()
         current_pole_angle = observation[1] # data.qpos 
         current_pole_vel = self.data.qvel[1] # data.vel 
-        current_cart_position = observation[0] # Cart posistion
+        current_cart_position = observation[0] # Cart posistion 
 
         r_alive = 0.1 # reward for staying alive 
 
-        # 1 Pole angle tracking 
+        # 1 Pole angle tracking (TESTING CUBED and ABS)
         distance_pole = (self.current_pole_angle -  self.target_pole_angle)**2
 
         r_tracking = -distance_pole * 10
